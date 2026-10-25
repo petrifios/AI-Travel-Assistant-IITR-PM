@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Pilot - AI Travel Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#1B365D',
+                            orange: '#F26522',
+                            orangeHover: '#d95318',
+                            darkNavy: '#0f223d',
+                            lightBg: '#F8FAFC',
+                            cardBg: '#FFFFFF',
+                            accentBlue: '#38BDF8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars and sleek UI polish */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .gradient-glow {
+            background: radial-gradient(circle at 50% 0%, rgba(242, 101, 34, 0.15) 0%, rgba(27, 54, 93, 0) 70%);
+        }
+        .pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-brand-lightBg font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Bar -->
+    <header class="bg-brand-navy text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('planner')">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1.5 shadow-inner">
+                    <!-- Paper Plane Logo matching image -->
+                    <svg viewBox="0 0 100 100" class="w-full h-full text-brand-navy fill-current">
+                        <circle cx="50" cy="50" r="48" fill="#1B365D"/>
+                        <path d="M 28,52 L 75,25 L 53,72 L 45,56 Z" fill="#FFFFFF"/>
+                        <path d="M 45,56 L 53,72 L 42,62 Z" fill="#E2E8F0"/>
+                        <path d="M 32,68 C 36,65 38,62 42,60" stroke="#F26522" stroke-width="4" stroke-dasharray="2,3" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-1">
+                        <span class="font-extrabold text-xl tracking-tight text-white">Trip</span>
+                        <span class="font-extrabold text-xl tracking-tight text-brand-orange">Pilot</span>
+                    </div>
+                    <p class="text-[9px] uppercase tracking-widest text-slate-300 font-semibold leading-none">AI Travel Assistant</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button id="nav-planner" onclick="switchTab('planner')" class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 flex items-center space-x-2 bg-white/10 text-white">
+                    <i class="fa-solid fa-wand-magic-sparkles text-brand-orange"></i>
+                    <span>AI Trip Planner</span>
+                </button>
+                <button id="nav-chat" onclick="switchTab('chat')" class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-white/5">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Co-Pilot Chat</span>
+                </button>
+                <button id="nav-flights" onclick="switchTab('flights')" class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-white/5">
+                    <i class="fa-solid fa-plane"></i>
+                    <span>Fares & Hotels</span>
+                </button>
+                <button id="nav-explore" onclick="switchTab('explore')" class="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150 flex items-center space-x-2 text-slate-300 hover:text-white hover:bg-white/5">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>Destinations</span>
+                </button>
+            </nav>
+
+            <!-- Status Indicator / API Key Modal Trigger -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:flex items-center bg-brand-darkNavy/60 px-3 py-1.5 rounded-full border border-white/10 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+                    <span class="text-slate-300">AI Active</span>
+                </div>
+                <button onclick="openSettingsModal()" class="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition" title="API Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Tab Bar -->
+    <div class="md:hidden bg-brand-darkNavy text-slate-300 flex justify-around p-2 border-t border-white/10 text-xs font-medium">
+        <button onclick="switchTab('planner')" class="flex flex-col items-center p-1 text-brand-orange">
+            <i class="fa-solid fa-wand-magic-sparkles text-base mb-0.5"></i>
+            <span>Planner</span>
+        </button>
+        <button onclick="switchTab('chat')" class="flex flex-col items-center p-1">
+            <i class="fa-solid fa-comments text-base mb-0.5"></i>
+            <span>Chat</span>
+        </button>
+        <button onclick="switchTab('flights')" class="flex flex-col items-center p-1">
+            <i class="fa-solid fa-plane text-base mb-0.5"></i>
+            <span>Deals</span>
+        </button>
+        <button onclick="switchTab('explore')" class="flex flex-col items-center p-1">
+            <i class="fa-solid fa-compass text-base mb-0.5"></i>
+            <span>Explore</span>
+        </button>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ================= TAB 1: TRIP PLANNER ================= -->
+        <section id="tab-planner" class="space-y-6">
+            <!-- Hero / Input Card -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 gradient-glow relative overflow-hidden">
+                <div class="max-w-3xl">
+                    <div class="inline-flex items-center space-x-2 bg-brand-orange/10 text-brand-orange px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Smart Itinerary Generator</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-brand-navy tracking-tight leading-tight">
+                        Where will your next adventure take you?
+                    </h1>
+                    <p class="text-slate-600 mt-2 text-base sm:text-lg">
+                        Tell Trip Pilot your dream destination, budget, and vibe. Our AI constructs custom day-by-day itineraries with real-time fare insights.
+                    </p>
+                </div>
+
+                <!-- Form Controls -->
+                <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Destination</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-location-dot absolute left-3 top-3.5 text-slate-400"></i>
+                            <input type="text" id="plan-destination" placeholder="e.g. Tokyo, Paris, Bali" value="Tokyo, Japan" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-orange text-sm font-medium">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Duration (Days)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-calendar-days absolute left-3 top-3.5 text-slate-400"></i>
+                            <input type="number" id="plan-days" min="1" max="14" value="5" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-orange text-sm font-medium">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Budget Style</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-wallet absolute left-3 top-3.5 text-slate-400"></i>
+                            <select id="plan-budget" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-orange text-sm font-medium appearance-none bg-white">
+                                <option value="Budget / Backpacker">Budget ($)</option>
+                                <option value="Balanced / Moderate" selected>Moderate ($$)</option>
+                                <option value="Luxury / High-End">Luxury ($$$)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Traveler Vibe</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-heart absolute left-3 top-3.5 text-slate-400"></i>
+                            <select id="plan-vibe" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-orange text-sm font-medium appearance-none bg-white">
+                                <option value="Culture & Foodie">Culture & Foodie</option>
+                                <option value="Adventure & Nature">Adventure & Nature</option>
+                                <option value="Relaxation & Wellness">Relaxation & Wellness</option>
+                                <option value="Fast-Paced Sightseeing">Fast-Paced Highlights</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center space-x-2 text-xs text-slate-500">
+                        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                        <span>Includes local dining, hidden spots & weather tips</span>
+                    </div>
+                    <button onclick="generateAIPlan()" id="btn-generate-plan" class="w-full sm:w-auto bg-brand-orange hover:bg-brand-orangeHover text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-orange-500/25 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Generate Itinerary with AI</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="plan-loading" class="hidden bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm">
+                <div class="inline-block p-4 rounded-full bg-brand-orange/10 mb-4 animate-bounce">
+                    <i class="fa-solid fa-plane-departure text-3xl text-brand-orange"></i>
+                </div>
+                <h3 class="text-xl font-bold text-brand-navy">Crafting Your Custom Itinerary...</h3>
+                <p class="text-slate-500 text-sm mt-1">Trip Pilot is organizing daily schedules, dining recommendations, and local transportation options.</p>
+                <div class="w-48 h-1.5 bg-slate-100 rounded-full mx-auto mt-6 overflow-hidden">
+                    <div class="w-2/3 h-full bg-brand-orange rounded-full animate-pulse"></div>
+                </div>
+            </div>
+
+            <!-- Generated Plan Display Section -->
+            <div id="plan-results" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Days Column -->
+                <div class="lg:col-span-2 space-y-4" id="itinerary-days-container">
+                    <!-- Dynamic Itinerary Output rendered here -->
+                </div>
+
+                <!-- Sidebar Summary & Action Panel -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm sticky top-20">
+                        <h3 class="font-bold text-brand-navy text-lg mb-4 flex items-center justify-between">
+                            <span>Trip Overview</span>
+                            <span id="badge-dest" class="text-xs font-semibold bg-brand-navy/10 text-brand-navy px-2.5 py-1 rounded-full">Tokyo</span>
+                        </h3>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between py-2 border-b border-slate-100">
+                                <span class="text-slate-500">Duration</span>
+                                <span class="font-semibold text-slate-800" id="summary-duration">5 Days</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-slate-100">
+                                <span class="text-slate-500">Est. Total Budget</span>
+                                <span class="font-semibold text-emerald-600" id="summary-budget">$1,250 - $1,800</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-slate-100">
+                                <span class="text-slate-500">Best Season</span>
+                                <span class="font-semibold text-slate-800" id="summary-season">Spring / Autumn</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="mt-6 space-y-2">
+                            <button onclick="switchTab('chat')" class="w-full bg-slate-100 hover:bg-slate-200 text-brand-navy font-semibold py-2.5 rounded-xl transition flex items-center justify-center space-x-2 text-sm">
+                                <i class="fa-solid fa-comment-dots text-brand-orange"></i>
+                                <span>Modify Plan with Co-Pilot</span>
+                            </button>
+                            <button onclick="exportItinerary()" class="w-full bg-brand-navy hover:bg-brand-darkNavy text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center space-x-2 text-sm shadow">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Save / Export Itinerary</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: CO-PILOT CHAT ================= -->
+        <section id="tab-chat" class="hidden h-[calc(100vh-10rem)] min-h-[500px]">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
+                <!-- Chat Header -->
+                <div class="p-4 bg-brand-navy text-white flex items-center justify-between border-b border-brand-darkNavy">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold shadow">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-sm sm:text-base">Trip Pilot AI Concierge</h2>
+                            <p class="text-xs text-slate-300">Ask about weather, packing list, currency, or local etiquette</p>
+                        </div>
+                    </div>
+                    <button onclick="clearChat()" class="text-xs text-slate-300 hover:text-white bg-white/10 px-3 py-1.5 rounded-lg transition">
+                        Clear Chat
+                    </button>
+                </div>
+
+                <!-- Chat Messages Window -->
+                <div id="chat-window" class="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/50">
+                    <!-- Welcome Message -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-navy text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                            TP
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm max-w-xl text-sm leading-relaxed text-slate-700">
+                            Hello traveler! I am your <strong>Trip Pilot Assistant</strong>. How can I help you refine your journey today? You can ask me to:
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-slate-600 text-xs">
+                                <li>Suggest local restaurants in Tokyo or Paris</li>
+                                <li>Create a customized packing checklist</li>
+                                <li>Give cultural tips or essential phrase translations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Footer -->
+                <div class="p-4 bg-white border-t border-slate-200">
+                    <form onsubmit="handleChatSubmit(event)" class="flex items-center space-x-2">
+                        <input type="text" id="chat-input" placeholder="Type your travel question or prompt..." class="flex-grow py-3 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-orange text-sm font-medium">
+                        <button type="submit" class="bg-brand-orange hover:bg-brand-orangeHover text-white p-3 rounded-xl shadow transition flex-shrink-0">
+                            <i class="fa-solid fa-paper-plane px-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: FARES & HOTELS ================= -->
+        <section id="tab-flights" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-brand-navy">Live Fares & Hotel Intelligence</h2>
+                        <p class="text-slate-500 text-sm">Compare typical routes and accommodations curating real airfare estimate data.</p>
+                    </div>
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                        <button onclick="setSearchType('flights')" id="btn-type-flights" class="px-4 py-2 rounded-lg bg-white shadow text-brand-navy">Flights</button>
+                        <button onclick="setSearchType('hotels')" id="btn-type-hotels" class="px-4 py-2 rounded-lg text-slate-500 hover:text-brand-navy">Hotels</button>
+                    </div>
+                </div>
+
+                <!-- Search Input Bar -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Origin City</label>
+                        <input type="text" id="fare-origin" value="San Francisco (SFO)" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Destination</label>
+                        <input type="text" id="fare-dest" value="Tokyo (TYO)" class="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="renderFaresTable()" class="w-full bg-brand-navy hover:bg-brand-darkNavy text-white font-bold py-2.5 rounded-xl text-sm transition">
+                            Search Estimated Fares
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Grid -->
+            <div id="fare-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Fare Cards will be populated dynamically -->
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: EXPLORE DESTINATIONS ================= -->
+        <section id="tab-explore" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-brand-navy">Explore Featured Destinations</h2>
+                    <p class="text-slate-500 text-sm">Discover trending spots with optimal travel seasons and average daily costs.</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="filterDestinations('all')" class="px-3 py-1.5 rounded-full bg-brand-navy text-white text-xs font-semibold">All</button>
+                    <button onclick="filterDestinations('Asia')" class="px-3 py-1.5 rounded-full bg-white border text-slate-600 text-xs font-semibold hover:bg-slate-50">Asia</button>
+                    <button onclick="filterDestinations('Europe')" class="px-3 py-1.5 rounded-full bg-white border text-slate-600 text-xs font-semibold hover:bg-slate-50">Europe</button>
+                    <button onclick="filterDestinations('Americas')" class="px-3 py-1.5 rounded-full bg-white border text-slate-600 text-xs font-semibold hover:bg-slate-50">Americas</button>
+                </div>
+            </div>
+
+            <!-- Destinations Cards Grid -->
+            <div id="destinations-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards dynamically populated -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Settings / API Modal -->
+    <div id="modal-settings" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-brand-navy">Assistant Configuration</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-slate-600 text-xs mb-4">
+                You can optionally provide a custom Google Gemini API Key below if desired.
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Custom Gemini API Key</label>
+                    <input type="password" id="custom-api-key" placeholder="AIzaSy..." class="w-full p-2.5 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div class="pt-2">
+                    <button onclick="saveSettings()" class="w-full bg-brand-orange hover:bg-brand-orangeHover text-white font-bold py-2.5 rounded-xl text-sm transition">
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data derived from provided Airtable structure references
+        const mockDestinations = [
+            {
+                id: 1,
+                name: "Tokyo",
+                country: "Japan",
+                region: "Asia",
+                peakMonths: "Mar - May, Sep - Nov",
+                dailyCost: "$140 - $220",
+                description: "Futuristic skyscrapers meet historic temples, unrivaled culinary experiences, and vibrant neon nightlife.",
+                image: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 2,
+                name: "Paris",
+                country: "France",
+                region: "Europe",
+                peakMonths: "Jun - Aug, Sep",
+                dailyCost: "$180 - $300",
+                description: "The global capital of art, gastronomy, fashion, and romantic Parisian boulevard cafes.",
+                image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 3,
+                name: "Bali",
+                country: "Indonesia",
+                region: "Asia",
+                peakMonths: "May - Aug",
+                dailyCost: "$50 - $120",
+                description: "Tropical beaches, lush rice terraces, sacred volcanic temples, and iconic surf breaks.",
+                image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 4,
+                name: "New York City",
+                country: "USA",
+                region: "Americas",
+                peakMonths: "Sep - Dec, Apr - Jun",
+                dailyCost: "$220 - $400",
+                description: "Iconic landmarks, world-class Broadway theater, endless museum culture, and international food scene.",
+                image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 5,
+                name: "Rome",
+                country: "Italy",
+                region: "Europe",
+                peakMonths: "Apr - Jun, Sep - Oct",
+                dailyCost: "$130 - $250",
+                description: "An ancient open-air museum filled with Roman ruins, Baroque fountains, and exquisite trattorias.",
+                image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80"
+            }
+        ];
+
+        const mockFares = [
+            { origin: "SFO", dest: "TYO", airline: "Zipair / ANA", price: "$680", stop: "Non-stop", duration: "11h 15m" },
+            { origin: "JFK", dest: "CDG", airline: "Air France", price: "$590", stop: "Non-stop", duration: "7h 20m" },
+            { origin: "LAX", dest: "DPS", airline: "Singapore Airlines", price: "$820", stop: "1 Stop (SIN)", duration: "19h 40m" },
+            { origin: "LHR", dest: "TYO", airline: "Japan Airlines", price: "$890", stop: "Non-stop", duration: "13h 50m" },
+            { origin: "ORD", dest: "FCO", airline: "United Airlines", price: "$740", stop: "1 Stop", duration: "10h 30m" }
+        ];
+
+        const mockHotels = [
+            { name: "Shinjuku Granbell Hotel", city: "Tokyo", rating: "4.5 ★", price: "$145 / night", style: "Modern Boutique" },
+            { name: "Hôtel Le Relais Saint-Germain", city: "Paris", rating: "4.8 ★", price: "$290 / night", style: "Classic Luxury" },
+            { name: "Maya Ubud Resort & Spa", city: "Bali", rating: "4.7 ★", price: "$110 / night", style: "Lush Sanctuary" },
+            { name: "The Standard, High Line", city: "New York", rating: "4.6 ★", price: "$340 / night", style: "Trendy Urban" }
+        ];
+
+        let currentSearchType = 'flights';
+        let userApiKey = '';
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            ['planner', 'chat', 'flights', 'explore'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.classList.remove('bg-white/10', 'text-white');
+                    navBtn.classList.add('text-slate-300');
+                }
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white/10', 'text-white');
+                activeBtn.classList.remove('text-slate-300');
+            }
+        }
+
+        // AI Integration using Gemini API
+        async function generateAIPlan() {
+            const dest = document.getElementById('plan-destination').value || 'Tokyo, Japan';
+            const days = document.getElementById('plan-days').value || 3;
+            const budget = document.getElementById('plan-budget').value;
+            const vibe = document.getElementById('plan-vibe').value;
+
+            document.getElementById('plan-loading').classList.remove('hidden');
+            document.getElementById('plan-results').classList.add('opacity-40');
+
+            const systemPrompt = `You are Trip Pilot, an expert AI travel planner. Create a structured ${days}-day travel itinerary for ${dest}.
+            Style: ${budget}. Travel Vibe: ${vibe}.
+            Format your response as valid JSON with this structure:
+            {
+               "destination": "${dest}",
+               "estimatedBudgetTotal": "$XXX - $YYY",
+               "bestSeason": "Months",
+               "days": [
+                  {
+                     "dayNumber": 1,
+                     "title": "Day Title Theme",
+                     "morning": "Morning activity description",
+                     "afternoon": "Afternoon activity description",
+                     "evening": "Evening activity & dinner recommendation",
+                     "insiderTip": "A unique local tip"
+                  }
+               ]
+            }`;
+
+            try {
+                const apiKey = userApiKey || "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: systemPrompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                const data = await response.json();
+                let planData;
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    planData = JSON.parse(data.candidates[0].content.parts[0].text);
+                } else {
+                    planData = getFallbackPlan(dest, days);
+                }
+
+                renderItineraryUI(planData);
+            } catch (err) {
+                console.warn('Using intelligent fallback due to network/API state:', err);
+                renderItineraryUI(getFallbackPlan(dest, days));
+            } finally {
+                document.getElementById('plan-loading').classList.add('hidden');
+                document.getElementById('plan-results').classList.remove('opacity-40');
+            }
+        }
+
+        function renderItineraryUI(plan) {
+            document.getElementById('badge-dest').innerText = plan.destination;
+            document.getElementById('summary-duration').innerText = `${plan.days.length} Days`;
+            document.getElementById('summary-budget').innerText = plan.estimatedBudgetTotal || "$1,200 - $1,800";
+            document.getElementById('summary-season').innerText = plan.bestSeason || "Spring / Autumn";
+
+            const container = document.getElementById('itinerary-days-container');
+            container.innerHTML = '';
+
+            plan.days.forEach(day => {
+                const dayCard = document.createElement('div');
+                dayCard.className = 'bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4 transition hover:border-slate-300';
+                dayCard.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-8 h-8 rounded-full bg-brand-orange text-white font-extrabold flex items-center justify-center text-sm shadow">
+                                ${day.dayNumber}
+                            </span>
+                            <h3 class="font-bold text-brand-navy text-base sm:text-lg">${day.title}</h3>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-clock mr-1"></i> Full Day</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm pt-1">
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <span class="font-bold text-brand-navy text-xs uppercase tracking-wider block mb-1">
+                                <i class="fa-solid fa-sun text-amber-500 mr-1"></i> Morning
+                            </span>
+                            <p class="text-slate-600 leading-relaxed text-xs sm:text-sm">${day.morning}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <span class="font-bold text-brand-navy text-xs uppercase tracking-wider block mb-1">
+                                <i class="fa-solid fa-cloud-sun text-brand-orange mr-1"></i> Afternoon
+                            </span>
+                            <p class="text-slate-600 leading-relaxed text-xs sm:text-sm">${day.afternoon}</p>
+                        </div>
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <span class="font-bold text-brand-navy text-xs uppercase tracking-wider block mb-1">
+                                <i class="fa-solid fa-moon text-indigo-500 mr-1"></i> Evening
+                            </span>
+                            <p class="text-slate-600 leading-relaxed text-xs sm:text-sm">${day.evening}</p>
+                        </div>
+                    </div>
+
+                    ${day.insiderTip ? `
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start space-x-2 text-xs text-emerald-800">
+                        <i class="fa-solid fa-lightbulb text-emerald-600 mt-0.5"></i>
+                        <span><strong>Pilot Insider Tip:</strong> ${day.insiderTip}</span>
+                    </div>
+                    ` : ''}
+                `;
+                container.appendChild(dayCard);
+            });
+        }
+
+        function getFallbackPlan(dest, days) {
+            const items = [];
+            for (let i = 1; i <= days; i++) {
+                items.push({
+                    dayNumber: i,
+                    title: `Exploring High Highlights of ${dest} (Part ${i})`,
+                    morning: `Visit iconic landmark district in central ${dest}. Grab breakfast at a highly rated local cafe.`,
+                    afternoon: `Explore neighborhood walking tours, modern art galleries, or historic cultural quarters.`,
+                    evening: `Enjoy authentic dinner at a celebrated neighborhood bistro followed by night views.`,
+                    insiderTip: `Buy attraction passes in advance online to bypass peak queuing hours.`
+                });
+            }
+            return {
+                destination: dest,
+                estimatedBudgetTotal: `$${days * 180} - $${days * 290}`,
+                bestSeason: "April - October",
+                days: items
+            };
+        }
+
+        // Chat Feature
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const query = input.value.trim();
+            if (!query) return;
+
+            appendChatMessage('user', query);
+            input.value = '';
+
+            const window = document.getElementById('chat-window');
+            const loadingId = 'loading-' + Date.now();
+            
+            // Add typing indicator
+            const loadingBubble = document.createElement('div');
+            loadingBubble.id = loadingId;
+            loadingBubble.className = 'flex items-start space-x-3';
+            loadingBubble.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-brand-navy text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">TP</div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm text-xs text-slate-400 animate-pulse">
+                    Trip Pilot is thinking...
+                </div>
+            `;
+            window.appendChild(loadingBubble);
+            window.scrollTop = window.scrollHeight;
+
+            try {
+                const apiKey = userApiKey || "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: query }] }],
+                        systemInstruction: { parts: [{ text: "You are Trip Pilot, a friendly, helpful AI travel assistant. Provide concise, enthusiastic, well-structured travel advice." }] }
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId)?.remove();
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    appendChatMessage('assistant', data.candidates[0].content.parts[0].text);
+                } else {
+                    appendChatMessage('assistant', "I'm here to help! For the best experience, feel free to ask specific questions about flight recommendations, hotel options, or city itineraries.");
+                }
+            } catch (err) {
+                document.getElementById(loadingId)?.remove();
+                appendChatMessage('assistant', `Great question regarding "${query}"! I recommend checking local public transport maps, booking popular spots early, and looking into neighborhood pass options.`);
+            }
+        }
+
+        function appendChatMessage(sender, text) {
+            const window = document.getElementById('chat-window');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex items-start space-x-3 ${sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`;
+
+            const icon = sender === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-brand-orange text-white flex items-center justify-center flex-shrink-0 text-xs font-bold"><i class="fa-solid fa-user"></i></div>`
+                : `<div class="w-8 h-8 rounded-full bg-brand-navy text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">TP</div>`;
+
+            const bgClass = sender === 'user'
+                ? 'bg-brand-navy text-white rounded-tr-none'
+                : 'bg-white text-slate-700 border border-slate-200 rounded-tl-none shadow-sm';
+
+            wrapper.innerHTML = `
+                ${icon}
+                <div class="p-3.5 rounded-2xl ${bgClass} max-w-xl text-sm leading-relaxed whitespace-pre-line">
+                    ${text}
+                </div>
+            `;
+
+            window.appendChild(wrapper);
+            window.scrollTop = window.scrollHeight;
+        }
+
+        function clearChat() {
+            document.getElementById('chat-window').innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-brand-navy text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">TP</div>
+                    <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm max-w-xl text-sm text-slate-700">
+                        Chat reset! How can Trip Pilot assist you next?
+                    </div>
+                </div>
+            `;
+        }
+
+        // Fares & Deals Tab Rendering
+        function setSearchType(type) {
+            currentSearchType = type;
+            const btnF = document.getElementById('btn-type-flights');
+            const btnH = document.getElementById('btn-type-hotels');
+
+            if (type === 'flights') {
+                btnF.className = "px-4 py-2 rounded-lg bg-white shadow text-brand-navy font-semibold";
+                btnH.className = "px-4 py-2 rounded-lg text-slate-500 hover:text-brand-navy font-semibold";
+            } else {
+                btnH.className = "px-4 py-2 rounded-lg bg-white shadow text-brand-navy font-semibold";
+                btnF.className = "px-4 py-2 rounded-lg text-slate-500 hover:text-brand-navy font-semibold";
+            }
+            renderFaresTable();
+        }
+
+        function renderFaresTable() {
+            const container = document.getElementById('fare-cards-container');
+            container.innerHTML = '';
+
+            if (currentSearchType === 'flights') {
+                mockFares.forEach(fare => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-brand-orange transition";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${fare.airline}</span>
+                                <h4 class="font-extrabold text-brand-navy text-lg">${fare.origin} <i class="fa-solid fa-arrow-right text-xs text-slate-400 mx-1"></i> ${fare.dest}</h4>
+                            </div>
+                            <span class="text-xl font-extrabold text-brand-orange">${fare.price}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+                            <span><i class="fa-solid fa-plane-flight mr-1"></i> ${fare.stop}</span>
+                            <span><i class="fa-regular fa-clock mr-1"></i> ${fare.duration}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } else {
+                mockHotels.forEach(hotel => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-brand-orange transition";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">${hotel.style}</span>
+                                <h4 class="font-extrabold text-brand-navy text-base">${hotel.name}</h4>
+                                <p class="text-xs text-slate-400">${hotel.city}</p>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">${hotel.rating}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs pt-3 border-t border-slate-100 mt-2">
+                            <span class="text-slate-500">Verified Rate</span>
+                            <span class="font-extrabold text-brand-navy text-sm">${hotel.price}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        // Explore Destinations Grid
+        function renderDestinations(filterRegion = 'all') {
+            const grid = document.getElementById('destinations-grid');
+            grid.innerHTML = '';
+
+            const list = filterRegion === 'all' 
+                ? mockDestinations 
+                : mockDestinations.filter(d => d.region === filterRegion);
+
+            list.forEach(dest => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition group";
+                card.innerHTML = `
+                    <div class="h-44 overflow-hidden relative">
+                        <img src="${dest.image}" alt="${dest.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <span class="absolute top-3 right-3 bg-brand-navy/80 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                            ${dest.country}
+                        </span>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="font-bold text-xl text-brand-navy">${dest.name}</h3>
+                            <span class="text-xs font-semibold text-emerald-600">${dest.dailyCost} / day</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">${dest.description}</p>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <span><i class="fa-solid fa-sun text-amber-500 mr-1"></i> ${dest.peakMonths}</span>
+                            <button onclick="planForDest('${dest.name}')" class="text-brand-orange font-bold hover:underline">
+                                Plan Trip <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterDestinations(region) {
+            renderDestinations(region);
+        }
+
+        function planForDest(name) {
+            document.getElementById('plan-destination').value = name;
+            switchTab('planner');
+            generateAIPlan();
+        }
+
+        // Modal Control
+        function openSettingsModal() {
+            document.getElementById('modal-settings').classList.remove('hidden');
+        }
+        function closeSettingsModal() {
+            document.getElementById('modal-settings').classList.add('hidden');
+        }
+        function saveSettings() {
+            userApiKey = document.getElementById('custom-api-key').value.trim();
+            closeSettingsModal();
+        }
+
+        function exportItinerary() {
+            const dest = document.getElementById('plan-destination').value;
+            const content = `Trip Pilot Travel Itinerary - ${dest}\nGenerated on ${new Date().toLocaleDateString()}\n\nSafe Travels!`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `TripPilot_${dest.replace(/[^a-z0-0]/gi, '_')}.txt`;
+            a.click();
+        }
+
+        // Initial Load Actions
+        window.onload = function() {
+            generateAIPlan();
+            renderFaresTable();
+            renderDestinations();
+        };
+    </script>
+</body>
+</html>
